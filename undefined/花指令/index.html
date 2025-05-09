@@ -1,0 +1,218 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>花指令 | yunchen</title><meta name="author" content="yunchen"><meta name="copyright" content="yunchen"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="花指令原理花指令存在的原因是x86指令并无定长，所以如果有人插入不影响代码运行的指令，即可改变汇编指令的表现形式 反编译器的线性反编译(理解花指令的重点)反编译器的工作原理是，从exe的入口AddressOfEntryPoint处开始，依序扫描字节码，并转换为汇编，比如第一个16进制字节码是0xE8，一般0xE8代表汇编里的CALL指令，且后面跟着的4个字节数据跟地址有关，那么反编译器就读取这一共">
+<meta property="og:type" content="article">
+<meta property="og:title" content="花指令">
+<meta property="og:url" content="https://1yunchen1.github.io/undefined/%E8%8A%B1%E6%8C%87%E4%BB%A4/index.html">
+<meta property="og:site_name" content="yunchen">
+<meta property="og:description" content="花指令原理花指令存在的原因是x86指令并无定长，所以如果有人插入不影响代码运行的指令，即可改变汇编指令的表现形式 反编译器的线性反编译(理解花指令的重点)反编译器的工作原理是，从exe的入口AddressOfEntryPoint处开始，依序扫描字节码，并转换为汇编，比如第一个16进制字节码是0xE8，一般0xE8代表汇编里的CALL指令，且后面跟着的4个字节数据跟地址有关，那么反编译器就读取这一共">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/%CE%A2%EF%BF%BD%EF%BF%BD%CD%BC%C6%AC_20250412213958.jpg">
+<meta property="article:published_time" content="2025-04-22T10:10:23.568Z">
+<meta property="article:modified_time" content="2025-05-09T15:06:09.899Z">
+<meta property="article:author" content="yunchen">
+<meta property="article:tag" content="reverse&#x2F;花指令">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/%CE%A2%EF%BF%BD%EF%BF%BD%CD%BC%C6%AC_20250412213958.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "花指令",
+  "url": "https://1yunchen1.github.io/undefined/%E8%8A%B1%E6%8C%87%E4%BB%A4/",
+  "image": "https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/΢��ͼƬ_20250412213958.jpg",
+  "datePublished": "2025-04-22T10:10:23.568Z",
+  "dateModified": "2025-05-09T15:06:09.899Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "yunchen",
+      "url": "https://1yunchen1.github.io/"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://1yunchen1.github.io/undefined/%E8%8A%B1%E6%8C%87%E4%BB%A4/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '花指令',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/΢��ͼƬ_20250412213958.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">4</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">3</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> Link</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">yunchen</span></a><a class="nav-page-title" href="/"><span class="site-name">花指令</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> Link</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">花指令</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2025-04-22T10:10:23.568Z" title="发表于 2025-04-22 18:10:23">2025-04-22</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2025-05-09T15:06:09.899Z" title="更新于 2025-05-09 23:06:09">2025-05-09</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/reverse/">reverse</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="花指令"><a href="#花指令" class="headerlink" title="花指令"></a>花指令</h1><h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>花指令存在的原因是x86指令并无定长，所以如果有人插入不影响代码运行的指令，即可改变汇编指令的表现形式</p>
+<p>反编译器的线性反编译(理解花指令的重点)<br>反编译器的工作原理是，从exe的入口AddressOfEntryPoint处开始，依序扫描字节码，并转换为汇编，比如第一个16进制字节码是0xE8，一般0xE8代表汇编里的CALL指令，且后面跟着的4个字节数据跟地址有关，那么反编译器就读取这一共5个字节，反编译为CALL 0x地址 。</p>
+<p>对应的，有些字节码只需要一个字节就可以反编译为一条指令，例如0x55对应的是push ebp，这条语句每个函数开始都会有。同样，有些字节码又需要两个、三个、四个字节来反编译为一条指令。</p>
+<p>也就是说，如果中间只要一个地方反编译出错，例如两条汇编指令中间突然多了一个字节0xE8，那反编译器就会将其跟着的4个字节处理为CALL指令地址相关数据给反编译成一条CALL 0x地址指令。但实际上0xE8后面的四个字节是单独的字节码指令。这大概就是线性反编译。</p>
+<p>线性扫描和递归下降<br>线性扫描：<br>线性扫描的特点：从入口开始，一次解析每一条指令，遇到分支指令不会递归进入分支。</p>
+<p>递归下降：<br>当使用线性扫描时，比如遇到call或者jmp的时候，不会跳转到对应地址进行反汇编，而是反汇编call指令的下一条指令，这就会导致出现很多问题。<br>递归下降分析当遇到分支指令时，会递归进入分支进行反汇编。</p>
+<p>使反汇编引擎解析错误<br>X86指令集的长度是不固定的，有一些指令很短，只有1个字节，有些指令比较长，可以达到5字节，指令长度不是固定的。如果通过巧妙的构造，引导反汇编引擎解析一条错误的指令，扰乱指令的长度，就能使反汇编引擎无法按照正常的指令长度一次解析邻接未解析的指令，最终使反汇编引擎输出错误的反汇编结果。</p>
+<p><img src="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/image-20250409205911452.png" alt="image-20250409205911452"></p>
+<p>借用大佬博客：</p>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/u011642058/article/details/114757503">CTF逆向基础—-花指令总结_ctf re 花指令-CSDN博客</a></p>
+<p>简单理解为增加逆向难度但不会影响程序正常运行的指令</p>
+<p>虽然不会影响程序的正常调用，但是在反汇编器进行反汇编时，插入的数据会影响汇编器的实际判断</p>
+<p>每条语句前的栈指针就是这条语句末执行的栈指针</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">构造有效花指令的关键思路就是构造使源程序逻辑不受影响的内联汇编代码，同时在内联汇编代码中嵌入jmp call+ret之类的对应机器码指令，使反汇编软件在反汇编时错误地识别这些机器码为汇编指令，从而影响反汇编出来的程序的正常流程。</span><br></pre></td></tr></table></figure>
+
+<p>正常情况下，代码在运行时堆栈平衡</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">程序段结束后，不应发生mov esp,ebp的操作，因为在pop出栈后，esp和ebp</span><br><span class="line">的值相等</span><br></pre></td></tr></table></figure>
+
+<p>但是由于花指令，ida会认为此时函数堆栈不平衡从而导致无法使用F5</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">花指令修改</span><br><span class="line">通过静态与动态分析进行代码调试找到不平衡代码，进行nop或着增加代码使程序堆栈平衡</span><br><span class="line">思路1.观察跳转地址，如果发现跳转地址与当前地址之间有字节影响指令，直接nop，注意跳转后的指令与修改后的指令保持</span><br><span class="line"></span><br><span class="line">在编辑中修改程序，以单字节修改，修改为90(nop指令)不执行，当程序恢复为数据后按c，将数据转变为汇编代码</span><br><span class="line">在已修补字节中查看修补过后的数据</span><br><span class="line">右键，快速修补可以将指令改为自己想要的目标指令</span><br></pre></td></tr></table></figure>
+
+<h2 id="示例1：普通花指令"><a href="#示例1：普通花指令" class="headerlink" title="示例1：普通花指令"></a>示例1：普通花指令</h2><p><img src="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/image-20250413170636586.png" alt="image-20250413170636586"></p>
+<p>ida中修改指令(在ida中修改掉汇编后，需返回函数头按p键重新编译成一个函数，比如我修改的是main函数，就需要去寻找</p>
+<p>int __cdecl main(int argc, const char **argv, const char **envp)去进行修改)</p>
+<p>在ida中修改时需要注意上一步的跳转指令跳转了几个字节，在后面相应的nop掉几个字节</p>
+<p><img src="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/image-20250409212825772.png" alt="image-20250409212825772"></p>
+<p>修改前的，使用dbg跳转后的指令，花指令往往会跳转至一个不可抵达区，这是因为使用跳转指令的操作码+正常指令的操作码所导致形成新的操作码如：E858c745ec表示call EC85D78B，而正常指令为58  c74550</p>
+<p>但是在程序中会有跳转指令使ip寄存器指向正常指令位置</p>
+<p><img src="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/image-20250409212954168.png" alt="image-20250409212954168"></p>
+<p>程序运行所恢复的的正常指令</p>
+<p><img src="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/image-20250409213245210.png" alt="image-20250409213245210"></p>
+<p>nop掉花指令后的代码（因为jnz指令跳转目标为40102F，所以可以选择擦除也可以不擦除）</p>
+<p><img src="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/image-20250409213607853.png" alt="image-20250409213607853"></p>
+<p>也可以选择全部擦除</p>
+<p><img src="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/image-20250409213940047.png" alt="image-20250409213940047"></p>
+<p><img src="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/image-20250409213922144.png" alt="image-20250409213922144"></p>
+<p>修改前后汇编代码区别</p>
+<h2 id="示例2：永真花指令"><a href="#示例2：永真花指令" class="headerlink" title="示例2：永真花指令"></a>示例2：永真花指令</h2><p><strong>题目：[HZNUCTF 2023 final]虽然他送了我玫瑰花</strong></p>
+<p><img src="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/image-20250422181632626.png" alt="image-20250422181632626"></p>
+<p>使用ida打开后，发现飘红的汇编</p>
+<p><img src="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/image-20250422181733299.png" alt="image-20250422181733299"></p>
+<p>发现永真花指令</p>
+<p>jnz指令：如果标志位ZF&#x3D;0，则跳转</p>
+<p>jz指令：如果标志位ZF&#x3D;1，则跳转</p>
+<p>可以看到两个指令跳转的条件不同</p>
+<p>ida显示字节码</p>
+<p><img src="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/image-20250422181848402.png" alt="image-20250422181848402"></p>
+<p><img src="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/image-20250422181939292.png" alt="image-20250422181939292"></p>
+<p><img src="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/image-20250422182004774.png" alt="image-20250422182004774"></p>
+<p>设置成功后直接将75 F9 NOP掉</p>
+<p>NOP掉后 使用p重构main函数</p>
+<p>但是我的ida无法重构且报错</p>
+<p><img src="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/image-20250422182521513.png" alt="image-20250422182521513"></p>
+<p><img src="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/image-20250422182603331.png" alt="image-20250422182603331"></p>
+<p>我直接将这一段重构（重构后再去重构main函数成功并且可以反编译，但是还是有警告，具体原因后面我再学习再改正）</p>
+<p><img src="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/image-20250422182743524.png" alt="image-20250422182743524"></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://1yunchen1.github.io">yunchen</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://1yunchen1.github.io/undefined/%E8%8A%B1%E6%8C%87%E4%BB%A4/">https://1yunchen1.github.io/undefined/%E8%8A%B1%E6%8C%87%E4%BB%A4/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://1yunchen1.github.io" target="_blank">yunchen</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/reverse-%E8%8A%B1%E6%8C%87%E4%BB%A4/">reverse/花指令</a></div><div class="post-share"><div class="social-share" data-image="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/΢��ͼƬ_20250412213958.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/undefined/IDA%E8%B0%83%E8%AF%95/" title="ida调试"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">ida调试</div></div><div class="info-2"><div class="info-item-1">IDA调试今天刷NSS时遇到一道题，记录一下学到的东西  使用ide检查  无壳，64位文件 拖入ida后发现对比字符串是在运行时生成的  查看大佬wp学会ida动态调试办法 第一步：设置Debugger，设置本地调试   再次打开后Debugger发生改变  开始调试 通过观察函数可知v12&#x3D;&amp;buf2，所以在此处打断点：   因为要求输入38位，所以打入（一开始随便输入结果一直直接结束）  停在断点处，然后查看  查看得到字符串 在调试过程中与ida静态分析一样 Tab查看伪代码，空格查看汇编    ida快捷键 功能    F7 单步步进   F8 单步步过   F9 继续运行程序   F4 运行到光标所在行   Ctrl + F7 直到该函数返回时才停止   Ctrl + F2 终止一个正在运行的进程   F2 设置断点   找到字符串后直接python梭哈  </div></div></div></a><a class="pagination-related" href="/undefined/%E5%AE%89%E5%8D%93%E9%80%86%E5%90%91/" title="安卓动态调试"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">安卓动态调试</div></div><div class="info-2"><div class="info-item-1">安卓逆向题目：[HNCTF 2022 WEEK2]Easy_Android安卓逆向接触的不多，根据大佬的wp写的 使用jed打开文件  打开主函数(MainActivity)看见汇编代码,鼠标右键进行反汇编  看到函数，函数大意就是将我们前的用户名进行md5运算之后，取其奇数索引的字符，与我们输入的flag｛｝里面的内容进行对比 法1：直接写出逆向解密代码：12345678import hashlibusername = &quot;Tenshine&quot;md = hashlib.md5(username.encode())#创建MD5对象md_pwd = md.hexdigest()#md5加密print(&quot;NSSCTF&#123;&quot;,end=&quot;&quot;)for i in range(0,len(md_pwd),2):   ...</div></div></div></a></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://yunchen-1350504234.cos.ap-guangzhou.myqcloud.com/΢��ͼƬ_20250412213958.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">yunchen</div><div class="author-info-description"></div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">4</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">3</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%8A%B1%E6%8C%87%E4%BB%A4"><span class="toc-number">1.</span> <span class="toc-text">花指令</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8E%9F%E7%90%86"><span class="toc-number">1.1.</span> <span class="toc-text">原理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A4%BA%E4%BE%8B1%EF%BC%9A%E6%99%AE%E9%80%9A%E8%8A%B1%E6%8C%87%E4%BB%A4"><span class="toc-number">1.2.</span> <span class="toc-text">示例1：普通花指令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A4%BA%E4%BE%8B2%EF%BC%9A%E6%B0%B8%E7%9C%9F%E8%8A%B1%E6%8C%87%E4%BB%A4"><span class="toc-number">1.3.</span> <span class="toc-text">示例2：永真花指令</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/undefined/%E5%AE%89%E5%8D%93%E9%80%86%E5%90%91/" title="安卓动态调试">安卓动态调试</a><time datetime="2025-05-08T01:28:50.400Z" title="发表于 2025-05-08 09:28:50">2025-05-08</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/undefined/%E8%8A%B1%E6%8C%87%E4%BB%A4/" title="花指令">花指令</a><time datetime="2025-04-22T10:10:23.568Z" title="发表于 2025-04-22 18:10:23">2025-04-22</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/undefined/IDA%E8%B0%83%E8%AF%95/" title="ida调试">ida调试</a><time datetime="2025-04-15T14:23:17.080Z" title="发表于 2025-04-15 22:23:17">2025-04-15</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/undefined/hello-world/" title="Hello World">Hello World</a><time datetime="2025-04-12T10:23:09.504Z" title="发表于 2025-04-12 18:23:09">2025-04-12</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2019 - 2025 By yunchen</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.3.5</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
